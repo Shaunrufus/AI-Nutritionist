@@ -1,125 +1,67 @@
 import streamlit as st
 import pandas as pd
 import joblib
-import os
-from dotenv import load_dotenv
 from groq import Groq
 
-import sys
-from pathlib import Path
-
-# Debug: Print Python path and files
-st.write("Python path:", sys.path)
-st.write("Root contents:", [f.name for f in Path('/mount/src').iterdir()])
-
-try:
-    import joblib
-    st.success("✅ joblib imported successfully!")
-except ImportError as e:
-    st.error(f"❌ Failed to import joblib: {str(e)}")
-    st.write("Installed packages:", sorted(sys.modules.keys()))
-
-# ===== 1. SECURE API KEY LOADING =====
+# ===== 1. ENVIRONMENT CONFIGURATION =====
 def get_api_key():
-    """Get API key from Streamlit secrets or local .env"""
+    """Get API key from Streamlit secrets (cloud) or local .env (dev)"""
     try:
-        # First try Streamlit Cloud secrets
+        # First try Streamlit secrets (for cloud)
         return st.secrets["GROQ_API_KEY"]
     except:
-        # Fallback to local .env for development
-        from dotenv import load_dotenv
-        load_dotenv()
-        return os.getenv("GROQ_API_KEY")
+        # For local development only
+        try:
+            from dotenv import load_dotenv
+            import os
+            load_dotenv()  # Only loads if .env exists
+            return os.getenv("GROQ_API_KEY")
+        except:
+            return None  # Will trigger error below
 
-
-# ===== 1. ABSOLUTE PATH RESOLUTION =====
-def get_project_root():
-    """Get the absolute path to the project root"""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    return os.path.dirname(current_dir)  # Goes up one level from app/ directory
-
-# Get paths with absolute certainty
-project_root = get_project_root()
-env_path = os.path.join(project_root, '.env')
-model_path = os.path.join(project_root, 'models', 'nutrition_regressor.pkl')
-
-# Debug output (visible in terminal)
-print(f"Project root: {project_root}")
-print(f"Looking for .env at: {env_path}")
-print(f"Looking for model at: {model_path}")
-
-# ===== 2. ENV FILE VALIDATION =====
-if not os.path.exists(env_path):
-    st.error(f"""
-    ❌ CRITICAL ERROR: .env file not found at:
-    {env_path}
+# Initialize client
+api_key = get_api_key()
+if not api_key:
+    st.error("""
+    ❌ API Key not configured!
+    For Cloud: Add to Streamlit Secrets as:
+    [secrets]
+    GROQ_API_KEY = "your_key_here"
     
-    Your file structure MUST be:
-    C:/ML Projects/AI-Nutritionist/
-    ├── .env                # MUST be here
-    ├── app/
-    │   └── Streamlit_app.py
-    └── models/
-        └── nutrition_regressor.pkl
-    
-    Current directory contents:
-    {os.listdir(project_root)}
+    For Local: Create .env file with:
+    GROQ_API_KEY=your_key_here
     """)
     st.stop()
 
-load_dotenv(env_path, override=True)
-groq_api_key = os.getenv("GROQ_API_KEY")
-
-if not groq_api_key:
-    st.error(f"""
-    ❌ GROQ_API_KEY not found in .env file!
-    
-    File contents at {env_path}:
-    {open(env_path).read()}
-    
-    Required format (no quotes, no spaces):
-    GROQ_API_KEY=your_actual_key_here
-    """)
-    st.stop()
-
-# ===== 3. GROQ CLIENT INIT =====
 try:
-    groq_client = Groq(api_key=groq_api_key)
-    # Test connection
-    available_models = [m.id for m in groq_client.models.list().data]
-    st.session_state.available_models = available_models
+    groq_client = Groq(api_key=api_key)
 except Exception as e:
-    st.error(f"""
-    ❌ Groq Connection Failed:
-    {str(e)}
-    
-    Verify:
-    1. Key is valid at https://console.groq.com/keys
-    2. No network restrictions
-    3. Key hasn't been revoked
-    """)
+    st.error(f"❌ API Connection Failed: {str(e)}")
     st.stop()
 
-# ===== 4. MODEL LOADING =====
+# ===== 2. SIMPLIFIED MODEL LOADING =====
 @st.cache_resource
 def load_ml_model():
     try:
-        if not os.path.exists(model_path):
-            raise FileNotFoundError(f"Model not found at:\n{model_path}")
-        return joblib.load(model_path)
+        # Use relative path that works in both environments
+        return joblib.load("models/nutrition_regressor.pkl")
     except Exception as e:
-        st.error(f"""
-        ❌ Model Loading Failed:
-        {str(e)}
-        
-        Verify:
-        1. File exists at: {model_path}
-        2. File permissions are correct
-        3. File is not corrupted
-        """)
+        st.error(f"❌ Model Error: {str(e)}")
         st.stop()
 
 ml_model = load_ml_model()
+
+# ===== 3. YOUR EXISTING UI CODE =====
+# [Keep ALL your existing UI and logic below]
+# [All your inputs, calculations, and displays remain unchanged]
+
+# ===== 4. YOUR EXISTING UI CODE =====
+# [Keep ALL your existing UI code below exactly as is]
+# [All your st.title(), inputs, calculations, etc. remain unchanged]
+
+# ===== 3. KEEP ALL YOUR UI CODE BELOW =====
+# [Your entire existing UI code remains UNCHANGED]
+# [All your st.title(), columns, inputs, etc.]
 
 # ===== 5. REST OF YOUR APP =====
 # [Keep all your existing UI code below]
