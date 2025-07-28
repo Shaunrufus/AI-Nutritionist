@@ -5,6 +5,33 @@ import os
 from dotenv import load_dotenv
 from groq import Groq
 
+import sys
+from pathlib import Path
+
+# Debug: Print Python path and files
+st.write("Python path:", sys.path)
+st.write("Root contents:", [f.name for f in Path('/mount/src').iterdir()])
+
+try:
+    import joblib
+    st.success("✅ joblib imported successfully!")
+except ImportError as e:
+    st.error(f"❌ Failed to import joblib: {str(e)}")
+    st.write("Installed packages:", sorted(sys.modules.keys()))
+
+# ===== 1. SECURE API KEY LOADING =====
+def get_api_key():
+    """Get API key from Streamlit secrets or local .env"""
+    try:
+        # First try Streamlit Cloud secrets
+        return st.secrets["GROQ_API_KEY"]
+    except:
+        # Fallback to local .env for development
+        from dotenv import load_dotenv
+        load_dotenv()
+        return os.getenv("GROQ_API_KEY")
+
+
 # ===== 1. ABSOLUTE PATH RESOLUTION =====
 def get_project_root():
     """Get the absolute path to the project root"""
