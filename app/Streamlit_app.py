@@ -1,7 +1,6 @@
 from groq import Groq
 import streamlit as st
-from langchain_groq import ChatGroq
-from langchain_core.messages import HumanMessage
+
 from dotenv import load_dotenv
 from pathlib import Path
 import joblib
@@ -135,18 +134,21 @@ with st.sidebar:
     user_input = st.text_input("Enter your query")
         
     if user_input and selected_model:
-        llm = ChatGroq(
-        temperature=0,
-        groq_api_key=api_key,
-        model_name=selected_model
-    )
+     with st.spinner("Generating response..."):
+        try:
+            response = groq_client.chat.completions.create(
+                model=selected_model,
+                messages=[
+                    {"role": "user", "content": user_input}
+                ],
+                temperature=0.7,
+                max_tokens=1000
+            )
+            st.markdown("### 🤖 Groq LLM Response:")
+            st.write(response.choices[0].message.content)
+        except Exception as e:
+            st.error(f"❌ LLM error: {str(e)}")
 
-    with st.spinner("Generating response..."):
-        response = llm.invoke([HumanMessage(content=user_input)])
-
-    st.markdown("### 🤖 Groq LLM Response:")
-    st.write(response.content)
-    
     st.markdown("---")
     st.header("📄 Upload Health Data (Optional)")
     uploaded_file = st.file_uploader("Upload health reports", type=["csv", "pdf"])
@@ -226,7 +228,8 @@ if st.button("✨ Generate Personalized Diet Plan", type="primary"):
             with st.spinner("Generating your meal plan..."):
                 try:
                     response = groq_client.chat.completions.create(
-                        model=model_choice,
+                        model=selected_model,
+
                         messages=[
                             {
                                 "role": "system",
