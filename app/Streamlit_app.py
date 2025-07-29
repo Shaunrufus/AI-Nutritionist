@@ -26,7 +26,7 @@ def get_api_key():
 api_key = get_api_key()
 
 if api_key:
-    st.success("🔑 API key loaded successfully.")
+    st.success()
 else:
     st.error("❌ API Key not configured! For Cloud: Add to Streamlit Secrets as: [secrets]\nGROQ_API_KEY = \"your_key_here\"\n\nFor Local: Create .env file with:\nGROQ_API_KEY=your_key_here")
     st.stop()
