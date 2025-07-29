@@ -1,4 +1,6 @@
 import streamlit as st
+st.write("🔑 Loaded key:", st.secrets.get("GROQ_API_KEY", "NOT FOUND"))
+
 import pandas as pd
 import joblib
 from groq import Groq
