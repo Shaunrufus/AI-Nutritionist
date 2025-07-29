@@ -1,49 +1,51 @@
-import streamlit as st
-import pandas as pd
-import joblib
 from groq import Groq
+import streamlit as st
+from langchain_groq import ChatGroq
+from langchain_core.messages import HumanMessage
+from dotenv import load_dotenv
+from pathlib import Path
+import joblib
+import pandas as pd
+import os
 
-# Debug: Show if key is loaded
  
-st.write("📜 All Secrets:", dict(st.secrets))
-st.write("🔑 Loaded key:", st.secrets.get("GROQ_API_KEY", "NOT FOUND"))
-
-
 # ===== 1. ENVIRONMENT CONFIGURATION =====
 def get_api_key():
-    """Get API key from Streamlit secrets (cloud) or local .env (dev)"""
     try:
-        return st.secrets["GROQ_API_KEY"]
-    except KeyError:
-        try:
-            from dotenv import load_dotenv
-            import os
-            load_dotenv()
-            return os.getenv("GROQ_API_KEY")
-        except:
-            return None
+        if "GROQ_API_KEY" in st.secrets:
+            return st.secrets["GROQ_API_KEY"]
+        else:
+            env_path = Path(__file__).resolve().parents[1] / '.env'
+            if env_path.exists():
+                load_dotenv(dotenv_path=env_path)
+                return os.getenv("GROQ_API_KEY")
+    except Exception as e:
+        st.error(f"❌ Error loading API key: {e}")
+    return None
 
 # Initialize client
 api_key = get_api_key()
-if not api_key:
-    st.error("""
-    ❌ API Key not configured!
-    For Cloud: Add to Streamlit Secrets as:
-    [secrets]
-    GROQ_API_KEY = "your_key_here"
-    
-    For Local: Create .env file with:
-    GROQ_API_KEY=your_key_here
-    """)
+
+if api_key:
+    st.success("🔑 API key loaded successfully.")
+else:
+    st.error("❌ API Key not configured! For Cloud: Add to Streamlit Secrets as: [secrets]\nGROQ_API_KEY = \"your_key_here\"\n\nFor Local: Create .env file with:\nGROQ_API_KEY=your_key_here")
     st.stop()
 
 # Connect Groq client
-try:
-    groq_client = Groq(api_key=api_key)
-except Exception as e:
-    st.error(f"❌ API Connection Failed: {str(e)}")
-    st.stop()
+groq_client = Groq(api_key=api_key)
 
+
+def fetch_available_models(groq_client):
+    try:
+        models = groq_client.models.list()
+        return [m.id for m in models.data]
+    except Exception as e:
+        st.error(f"❌ Failed to fetch models: {str(e)}")
+        return []
+
+if "available_models" not in st.session_state:
+    st.session_state["available_models"] = fetch_available_models(groq_client)
 # ===== 2. SIMPLIFIED MODEL LOADING =====
 @st.cache_resource
 def load_ml_model():
@@ -127,12 +129,23 @@ with st.sidebar:
     if not available_models:
         st.error("No supported models available")
         st.stop()
+    selected_model = st.selectbox("Choose a Groq Model", available_models)
+
+# ================== 💬 User Input ==================
+    user_input = st.text_input("Enter your query")
         
-    model_choice = st.selectbox(
-        "AI Model",
-        available_models,
-        help="70b for quality, 8b for speed"
+    if user_input and selected_model:
+        llm = ChatGroq(
+        temperature=0,
+        groq_api_key=api_key,
+        model_name=selected_model
     )
+
+    with st.spinner("Generating response..."):
+        response = llm.invoke([HumanMessage(content=user_input)])
+
+    st.markdown("### 🤖 Groq LLM Response:")
+    st.write(response.content)
     
     st.markdown("---")
     st.header("📄 Upload Health Data (Optional)")
