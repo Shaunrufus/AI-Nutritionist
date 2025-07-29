@@ -3,6 +3,9 @@ import pandas as pd
 import joblib
 from groq import Groq
 
+
+st.write("🔑 Loaded key:", st.secrets.get("GROQ_API_KEY"))
+
 # ===== 1. ENVIRONMENT CONFIGURATION =====
 def get_api_key():
     """Get API key from Streamlit secrets (cloud) or local .env (dev)"""
