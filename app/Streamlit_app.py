@@ -1,28 +1,24 @@
 import streamlit as st
-st.write("🔑 Loaded key:", st.secrets.get("GROQ_API_KEY", "NOT FOUND"))
-
 import pandas as pd
 import joblib
 from groq import Groq
 
-
-st.write("🔑 Loaded key:", st.secrets.get("GROQ_API_KEY"))
+# Debug: Show if key is loaded
+st.write("🔑 Loaded key:", st.secrets.get("GROQ_API_KEY", "NOT FOUND"))
 
 # ===== 1. ENVIRONMENT CONFIGURATION =====
 def get_api_key():
     """Get API key from Streamlit secrets (cloud) or local .env (dev)"""
     try:
-        # First try Streamlit secrets (for cloud)
         return st.secrets["GROQ_API_KEY"]
-    except:
-        # For local development only
+    except KeyError:
         try:
             from dotenv import load_dotenv
             import os
-            load_dotenv()  # Only loads if .env exists
+            load_dotenv()
             return os.getenv("GROQ_API_KEY")
         except:
-            return None  # Will trigger error below
+            return None
 
 # Initialize client
 api_key = get_api_key()
@@ -38,6 +34,7 @@ if not api_key:
     """)
     st.stop()
 
+# Connect Groq client
 try:
     groq_client = Groq(api_key=api_key)
 except Exception as e:
@@ -48,7 +45,6 @@ except Exception as e:
 @st.cache_resource
 def load_ml_model():
     try:
-        # Use relative path that works in both environments
         return joblib.load("models/nutrition_regressor.pkl")
     except Exception as e:
         st.error(f"❌ Model Error: {str(e)}")
