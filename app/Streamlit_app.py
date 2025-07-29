@@ -4,7 +4,10 @@ import joblib
 from groq import Groq
 
 # Debug: Show if key is loaded
+ 
+st.write("📜 All Secrets:", dict(st.secrets))
 st.write("🔑 Loaded key:", st.secrets.get("GROQ_API_KEY", "NOT FOUND"))
+
 
 # ===== 1. ENVIRONMENT CONFIGURATION =====
 def get_api_key():
