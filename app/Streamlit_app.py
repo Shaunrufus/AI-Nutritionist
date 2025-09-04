@@ -118,17 +118,26 @@ with st.container():
         st.image("https://cdn-icons-png.flaticon.com/512/2038/2038694.png", width=120)
 
 # Sidebar with model selection
+ # Sidebar with model selection
 with st.sidebar:
     st.header("⚙️ Settings")
     
-    # Only show available models
-    supported_models = ["llama3-70b-8192", "llama3-8b-8192", "mixtral-8x7b-32768"]
+    # Updated supported models (current as of Sept 2025)
+    supported_models = [
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant", 
+        "mistral-saba-24b",
+        "gemma2-9b-it"
+    ]
+    
     available_models = [m for m in supported_models if m in st.session_state.get('available_models', [])]
     
     if not available_models:
         st.error("No supported models available")
         st.stop()
+    
     selected_model = st.selectbox("Choose a Groq Model", available_models)
+
 
 # ================== 💬 User Input ==================
     user_input = st.text_input("Enter your query")
